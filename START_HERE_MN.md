@@ -1,6 +1,8 @@
 # CMS v1.5.1: GitHub-аас Ubuntu сервер асаах хүртэл
 
-Энэ заавар нь **одоо байгаа** `olympiad-submission-system/cms` Git repo, `olympiad-v1.5.1` branch, **Ubuntu 24.04** нэг сервер, Windows оролцогчдын компьютер гэсэн хувилбарт зориулагдсан. Бодит IP, GitHub repo URL, нууц үгээ өөрийнхөөрөө солино. CMS v1.5.1-ийг энэ зааврыг бичсэн Windows компьютерт ажиллуулаагүй; Ubuntu дээрх командуудыг ажиллуулж байж баталгаажуулна.
+Энэ заавар нь **одоо байгаа** `olympiad-submission-system/cms` Git repo, `olympiad-v1.5.1` branch, **Ubuntu 24.04** нэг сервер, Windows оролцогчдын компьютер гэсэн хувилбарт зориулагдсан. Бодит IP, Ubuntu хэрэглэгчийн нэр, нууц үгээ өөрийнхөөрөө солино. CMS v1.5.1-ийг энэ зааврыг бичсэн Windows компьютерт ажиллуулаагүй; Ubuntu дээрх командуудыг ажиллуулж байж баталгаажуулна.
+
+**Одоогийн төлөв:** 1–2-р алхам хийгдсэн. Код `https://github.com/sodkoifswe/olympiad-cms` private repo-ийн `olympiad-v1.5.1` branch-д push хийгдсэн. Одоо Ubuntu сервертэй бол **3-р алхмаас** үргэлжлүүл; 1–2-р алхмын Git командыг давтан ажиллуулах шаардлагагүй.
 
 ```text
 Windows админ PC ── GitHub руу код push
@@ -51,22 +53,22 @@ git config user.email "ТАНЫ_GITHUB_EMAIL"
 Энэ заавар болон `.gitignore`-ийн өөрчлөлтийг commit хийнэ. `git add .` хэрэглэхээс өмнө нууц файл байгаа эсэхийг үргэлж шалга.
 
 ```bat
-git add .gitignore UBUNTU_DEPLOYMENT_MN.md START_HERE_MN.md
+git add .gitignore START_HERE_MN.md
 git diff --cached --check
 git diff --cached --stat
 git commit -m "Add Ubuntu deployment guide"
 ```
 
-Одоо байгаа `origin` нь CMS-ийн **албан** `cms-dev/cms` repo. Үүнийг `upstream` нэрлээд шинэ GitHub repo-оо `origin` болгоно:
+Анх татсан үеийн `origin` нь CMS-ийн **албан** `cms-dev/cms` repo байсан. Түүнийг `upstream` нэрлээд өөрийн GitHub repo-г `origin` болгосон. Одоогийн repo дээр энэ өөрчлөлт аль хэдийн хийгдсэн; доорх командыг давтаж ажиллуулахгүй:
 
 ```bat
 git remote rename origin upstream
-git remote add origin https://github.com/<GITHUB_USER>/olympiad-cms.git
+git remote add origin https://github.com/sodkoifswe/olympiad-cms.git
 git remote -v
 git push -u origin olympiad-v1.5.1
 ```
 
-`git remote rename origin upstream` командыг **ганц удаа** хийнэ. Дараагийн удаа `upstream` аль хэдийн байвал давтахгүй. GitHub нэвтрэлт асуувал Git Credential Manager/браузераар нэвтэрнэ; GitHub account-ын password-ийг terminal-д Git password болгон оруулах арга ажиллахгүй байж болно.
+Энэ хэсэг нь анхны тохиргооны бүртгэл юм. GitHub нэвтрэлт асуувал Git Credential Manager/браузераар нэвтэрнэ; GitHub account-ын password-ийг terminal-д Git password болгон оруулах арга ажиллахгүй байж болно.
 
 GitHub repo дээр `olympiad-v1.5.1` branch, `START_HERE_MN.md`, `isolate` submodule харагдаж байгааг шалга. Энэ branch-ийг repo-гийн default branch болгон тохируулбал дараа нь clone хийхэд амар, гэхдээ доорх `-b` командад заавал шаардлагагүй.
 
@@ -102,12 +104,12 @@ Ubuntu дээр clone:
 
 ```bash
 git clone --recurse-submodules --branch olympiad-v1.5.1 \
-    git@github.com:<GITHUB_USER>/olympiad-cms.git ~/cms
+    git@github.com:sodkoifswe/olympiad-cms.git ~/cms
 cd ~/cms
 git submodule status
 ```
 
-Анх GitHub SSH host key баталгаажуулах үед GitHub-ийн [албан fingerprint](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)-тай тулгаж зөвшөөр. Хэрэв repo **public** бол deploy key хэрэггүй; `https://github.com/<GITHUB_USER>/olympiad-cms.git` URL-аар clone хийж болно.
+Анх GitHub SSH host key баталгаажуулах үед GitHub-ийн [албан fingerprint](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)-тай тулгаж зөвшөөр. Хэрэв repo-г **public** болговол deploy key хэрэггүй; `https://github.com/sodkoifswe/olympiad-cms.git` URL-аар clone хийж болно.
 
 ## 5. CMS болон `isolate`-ийг суулгах
 
