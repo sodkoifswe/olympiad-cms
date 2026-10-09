@@ -147,29 +147,31 @@ sudo -u postgres psql --dbname=cmsdb --command='GRANT SELECT ON pg_largeobject T
 
 Эдгээрийг шинэ сервер дээр **нэг удаа** ажиллуулна. Repo-г `git pull` хийх бүрт database-г дахин үүсгэхгүй.
 
+Хэрэв database password хаа нэг газар ил болсон бол PostgreSQL role-ийг дахин үүсгэхгүй; `sudo -u postgres psql`-д орж `\password cmsuser` гэж ажиллуулан шинэ password-ийг хоёр удаа оруулж, `\q`-ээр гарна. Дараа нь `/usr/local/etc/cms.conf` доторх **байгаа** `database` мөрийг мөн шинэ password-д тааруулна. Нууц үгийг чат, screenshot, Git-д бүү оруул.
+
 ## 7. Серверийн нууц config
 
 ```bash
 sudo nano /usr/local/etc/cms.conf
 ```
 
-JSON файлын дараах утгуудыг засна:
+**Шинэ JSON блок нэмж paste хийхгүй.** `cms.conf` sample дотор эдгээр түлхүүр бүр аль хэдийн байна. `Ctrl+W`-ээр түлхүүрийг олж, тухайн **байгаа мөрийн утгыг л** солино. Нэг түлхүүрийг хоёр удаа бичвэл JSON шалгалт давж байсан ч тохиргоо буруу ойлгогдож болно.
 
-```json
-"database": "postgresql+psycopg2://cmsuser:<DB_PASSWORD>@localhost:5432/cmsdb",
-"secret_key": "<32_HEX_CHARACTERS>",
-"admin_listen_address": "127.0.0.1",
-"contest_listen_address": ["0.0.0.0"],
-"rankings": []
-```
+| Байгаа түлхүүр | Тохируулах утга |
+| --- | --- |
+| `database` | `postgresql+psycopg2://cmsuser:<DB_PASSWORD>@localhost:5432/cmsdb` |
+| `secret_key` | `openssl rand -hex 16`-аар гаргасан **шинэ** 32 тэмдэгттэй hex утга |
+| `admin_listen_address` | `127.0.0.1` |
+| `contest_listen_address` | `["0.0.0.0"]` |
+| `rankings` | `[]` (тусдаа RankingWebServer асаахгүй үед) |
 
-`<...>` тэмдэглэгээг үлдээлгүй бодит утгаар солино. `secret_key`-д шинэ 32 тэмдэгттэй hex утга `openssl rand -hex 16` командаар гаргаж болно. `core_services` доторх `Worker` жагсаалтыг эхний туршилтад **нэг** worker `[["localhost", 26000]]` болгоно; sample-д 16 байдаг. `rankings: []` нь тусдаа RankingWebServer асаахгүй гэсэн үг. Хэрэв дараа ranking ашиглавал тусад нь тохируулна.
+`<DB_PASSWORD>`-ийн оронд PostgreSQL role-д өгсөн бодит password-ийг оруулна. URL-д `@`, `/`, `:` зэрэг тусгай тэмдэгт байвал URL encode хийх шаардлагатай; эхний тохиргоонд урт санамсаргүй **hex** password ашиглахад хялбар. `core_services` доторх `Worker` жагсаалтыг эхний туршилтад **нэг** worker `[["localhost", 26000]]` болгоно; sample-д 16 байдаг.
 
 ```bash
-python3 -m json.tool /usr/local/etc/cms.conf >/dev/null
+sudo python3 -m json.tool /usr/local/etc/cms.conf >/dev/null && echo 'JSON OK'
 ```
 
-Энэ команд алдаагүй дуусвал JSON syntax зөв. `/usr/local/etc/cms.conf` болон database password-ийг Git-д бүү нэм. `config/cms.conf.sample`-ийг шууд бодит тэмцээнд ашиглахгүй.
+Config нь `cmsuser`-ийн унших эрхтэй файл учир энгийн хэрэглэгчээр `json.tool` ажиллуулахад `Permission denied` гарч болно. Дээрх `sudo` шалгалт `JSON OK` гэж гарвал syntax зөв. `/usr/local/etc/cms.conf` болон database password-ийг Git-д бүү нэм. `config/cms.conf.sample`-ийг шууд бодит тэмцээнд ашиглахгүй.
 
 ## 8. DB schema, admin account, анхны contest
 
