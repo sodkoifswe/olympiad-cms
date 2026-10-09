@@ -16,3 +16,5 @@ log/
 codecov/
 .dev/
 test_logs/
+config/cms.conf
+config/cms.ranking.conf
