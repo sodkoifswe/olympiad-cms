@@ -28,8 +28,10 @@
 
 """
 
+import re
+
 from cms import ServiceCoord, get_service_shards, get_service_address
-from cms.db import Contest, Participation, Submission
+from cms.db import Contest, Participation, Submission, SubmissionResult, Task
 from cmscommon.datetime import make_datetime
 
 from .base import BaseHandler, SimpleContestHandler, SimpleHandler, \
@@ -153,6 +155,76 @@ class OverviewHandler(BaseHandler):
 
         self.r_params = self.render_params()
         self.render("overview.html", **self.r_params)
+
+
+class PreflightHandler(BaseHandler):
+    """Read-only checks to run before opening a contest."""
+
+    @require_permission(BaseHandler.AUTHENTICATED)
+    def get(self, contest_id):
+        contest = self.safe_get_item(Contest, contest_id)
+        self.contest = contest
+        task_checks = []
+        for task in contest.tasks:
+            dataset = task.active_dataset
+            issues = []
+            if dataset is None:
+                issues.append("No active dataset")
+            else:
+                if not dataset.testcases:
+                    issues.append("No testcases")
+                try:
+                    score_type = dataset.score_type_object
+                    if dataset.score_type == "GroupMin":
+                        groups = score_type.retrieve_target_testcases()
+                        all_names = set(dataset.testcases)
+                        used = [name for group in groups for name in group]
+                        if set(used) != all_names or len(used) != len(set(used)):
+                            issues.append("GroupMin testcases are missing or overlap")
+                except (AssertionError, ValueError, TypeError, KeyError,
+                        re.error) as error:
+                    issues.append("Invalid score settings: %s" % error)
+                try:
+                    dataset.task_type_object
+                except (AssertionError, ValueError, TypeError, KeyError) as error:
+                    issues.append("Invalid task settings: %s" % error)
+            if not task.submission_format:
+                issues.append("No submission filename format")
+            if not task.statements:
+                issues.append("No task statement")
+            task_checks.append(dict(task=task, dataset=dataset, issues=issues))
+
+        # A real scored submission on the active dataset verifies that a
+        # language has passed through compilation and evaluation. It is not
+        # a substitute for checking a known-correct solution manually.
+        successful_languages = set()
+        rows = self.sql_session.query(Submission.language)\
+            .join(SubmissionResult, SubmissionResult.submission_id == Submission.id)\
+            .join(Task, Submission.task_id == Task.id)\
+            .filter(Task.contest_id == contest.id)\
+            .filter(SubmissionResult.dataset_id == Task.active_dataset_id)\
+            .filter(SubmissionResult.compilation_outcome == "ok")\
+            .filter(SubmissionResult.evaluation_outcome == "ok")\
+            .filter(SubmissionResult.score.isnot(None))\
+            .distinct().all()
+        for (language,) in rows:
+            successful_languages.add(language)
+
+        target_languages = []
+        for label, keyword in (("C++", "c++"), ("Java", "java"),
+                               ("Python", "python")):
+            enabled = [name for name in contest.languages
+                       if keyword in name.lower()]
+            target_languages.append(dict(
+                label=label, enabled=enabled,
+                tested=[name for name in enabled
+                        if name in successful_languages]))
+
+        params = self.render_params()
+        params.update(task_checks=task_checks,
+                      target_languages=target_languages,
+                      has_scored_submission=bool(successful_languages))
+        self.render("preflight.html", **params)
 
 
 class ResourcesListHandler(BaseHandler):

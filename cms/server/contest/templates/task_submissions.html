@@ -228,6 +228,19 @@ $(document).ready(function () {
 <h2 style="margin-bottom: 10px">{% trans %}Submit a solution{% endtrans %}</h2>
 
 {% set task_type = get_task_type(dataset=task.active_dataset) %}
+<div class="alert alert-info" style="max-width:850px; line-height:1.55;">
+    <strong>Бодолт илгээх товч заавар</strong>
+    <ol style="margin-top:8px;">
+        <li>Бодлогын нөхцөлөөс оролт, гаралт болон файлын нэрийн шаардлагыг шалгана.</li>
+        {% if task.active_dataset.task_type == 'Batch' %}
+        <li>Кодоо C++, Java эсвэл Python-оор бичиж болно. Доорх хэлний жагсаалтад идэвхтэй байгаа хэлийг сонгоно.</li>
+        {% endif %}
+        <li>Энэ бодлогын илгээх файлын загвар: <strong>{{ task.submission_format|join(', ') }}</strong>. {% if task.active_dataset.task_type == 'Batch' %}<code>%l</code> нь сонгосон хэлний өргөтгөлөөр солигдоно. Java-д үндсэн класс нь бодлогын богино нэртэй (<code>{{ task.name }}</code>) ижил байх ёстой.{% endif %}</li>
+        <li>Файлаа сонгоод <strong>Submit</strong> дарна. Доорх “Previous submissions” хэсгээс компиляци, тестийн дүн, оноогоо шалгана.</li>
+    </ol>
+    {% if task.active_dataset.score_type == 'GroupMin' %}<p style="margin-bottom:0;">Энэ бодлогод нэг subtask-ийн аль нэг testcase буруу бол тухайн subtask бүхэлдээ 0 оноо авна.</p>{% endif %}
+</div>
+
 {% if task_type.ALLOW_PARTIAL_SUBMISSION %}
   <p><strong>{% trans %}You may submit any subset of outputs in a single submission.{% endtrans %}</strong></p>
 {% endif %}

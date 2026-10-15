@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block js %}
+function update_preflight_workers(response) {
+    var target = document.getElementById("preflight_workers");
+    var message = utils.standard_response(response);
+    if (message !== "") {
+        target.textContent = "EvaluationService unavailable: " + message;
+        return;
+    }
+    var workers = response.data || [];
+    var shards = Object.keys(workers);
+    var ready = 0;
+    for (var i = 0; i < shards.length; i++) {
+        var worker = workers[shards[i]];
+        if (worker.connected && worker.operations !== "disabled") {
+            ready++;
+        }
+    }
+    target.textContent = ready + " of " + shards.length +
+        " workers connected and enabled";
+    target.style.color = ready > 0 ? "#276327" : "#a00000";
+}
+function refresh_preflight_workers() {
+    document.getElementById("preflight_workers").textContent = "Checking…";
+    cmsrpc_request("EvaluationService", 0, "workers_status", {},
+                   update_preflight_workers);
+}
+function update_preflight_logs(response) {
+    var target = document.getElementById("preflight_logs");
+    var message = utils.standard_response(response);
+    target.textContent = message === "" ? "Available" : "Unavailable: " + message;
+    target.style.color = message === "" ? "#276327" : "#a00000";
+}
+function refresh_preflight_logs() {
+    cmsrpc_request("LogService", 0, "last_messages", {},
+                   update_preflight_logs);
+}
+{% endblock js %}
+
+{% block js_init %}
+refresh_preflight_workers();
+refresh_preflight_logs();
+{% endblock js_init %}
+
+{% block core %}
+<div class="core_title"><h1>Contest preflight: {{ contest.name }}</h1></div>
+<p>Review this page before contestants join. The live worker check runs when the page opens; refresh after changing services or task settings.</p>
+
+<h2>Services</h2>
+<table class="bordered">
+  <tr><th>Service</th><th>Status</th></tr>
+  <tr><td>AdminWebServer / database</td><td>Available — this page loaded</td></tr>
+  <tr><td>EvaluationService / Worker</td><td id="preflight_workers">Checking…</td></tr>
+  <tr><td>LogService</td><td id="preflight_logs">Checking…</td></tr>
+  <tr><td>Scoring pipeline</td><td>{% if has_scored_submission %}At least one submission received a score{% else %}No scored submission yet; run a test submission{% endif %}</td></tr>
+</table>
+<p><button type="button" onclick="refresh_preflight_workers(); refresh_preflight_logs();">Refresh service status</button></p>
+
+<h2>Tasks and testcases</h2>
+{% if not task_checks %}
+<p style="color:#a00000">No tasks are attached to this contest.</p>
+{% else %}
+<table class="bordered">
+  <tr><th>Task</th><th>Active dataset</th><th>Testcases</th><th>Settings</th></tr>
+  {% for item in task_checks %}
+  <tr>
+    <td><a href="{{ url('task', item.task.id) }}">{{ item.task.name }}</a></td>
+    <td>{% if item.dataset %}{{ item.dataset.description }}{% else %}Missing{% endif %}</td>
+    <td>{% if item.dataset %}{{ item.dataset.testcases|length }}{% else %}0{% endif %}</td>
+    <td>
+      {% if item.issues %}
+        {% for issue in item.issues %}<div style="color:#a00000">{{ issue }}</div>{% endfor %}
+      {% else %}<span style="color:#276327">Ready</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>C++ / Java / Python</h2>
+<p>“Evaluated” means at least one submission compiled and received a score on an active dataset. Submit a known-correct solution in each language to verify correctness.</p>
+<table class="bordered">
+  <tr><th>Language</th><th>Enabled in contest</th><th>Evaluated submission</th></tr>
+  {% for item in target_languages %}
+  <tr>
+    <td>{{ item.label }}</td>
+    <td>{% if item.enabled %}{{ item.enabled|join(', ') }}{% else %}<span style="color:#a00000">No</span>{% endif %}</td>
+    <td>{% if item.tested %}<span style="color:#276327">Yes: {{ item.tested|join(', ') }}</span>{% else %}<span style="color:#a00000">Not yet</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p><a href="{{ url('contest', contest.id) }}">Change allowed languages</a> · <a href="{{ url('contest', contest.id, 'submissions') }}">Review submissions</a></p>
+{% endblock core %}

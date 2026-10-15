@@ -430,6 +430,18 @@ $("select[name=task_type_{{ dataset.id }}]").change(function() {
           <td><textarea name="score_type_parameters_{{ dataset.id }}">{{ dataset.score_type_parameters|tojson|forceescape }}</textarea></td>
         </tr>
       </table>
+{% if admin.permission_all %}
+      <div class="subtask-builder" data-dataset-id="{{ dataset.id }}" style="border:1px solid #c7d7c0; padding:14px; margin:18px 0; background:#f5faf2; max-width:720px;">
+        <h4>Visual subtask builder (GroupMin)</h4>
+        <p>Group testcases into subtasks and assign one score to each group. If any testcase fails, that subtask receives 0 points.</p>
+        {% for codename, testcase in dataset.testcases|dictsort(by="key") %}
+        <span data-testcase-name="{{ codename }}" hidden></span>
+        {% endfor %}
+        <div class="subtask-editor"></div>
+        <button class="subtask-apply" type="button">Apply to Score Parameters</button>
+        <p class="subtask-message" aria-live="polite"></p>
+      </div>
+{% endif %}
       <div class="hr"></div>
     </div>
 
@@ -468,6 +480,9 @@ $("select[name=task_type_{{ dataset.id }}]").change(function() {
               <a href="javascript:void(0);" onclick="utils.show_file('output_{{ testcase.codename }}','{{ url("file", testcase.output, "output_%s"|format(testcase.codename)) }}')">Show output</a>
             </td>
             <td>
+{% if admin.permission_all %}
+              <a href="{{ url('dataset', dataset.id, 'testcase', testcase.id, 'edit') }}">Edit / duplicate</a> ·
+{% endif %}
               <a onclick="CMS.AWSUtils.ajax_delete('{{ url("dataset", dataset.id, "testcase", testcase.id, "delete") }}');">Delete</a>
             </td>
           </tr>
@@ -497,4 +512,5 @@ $("select[name=task_type_{{ dataset.id }}]").change(function() {
 {% endif %}
          />
 </form>
+<script src="{{ url('static', 'subtask_builder.js') }}"></script>
 {% endblock core %}

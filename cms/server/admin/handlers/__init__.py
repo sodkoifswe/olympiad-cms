@@ -31,6 +31,7 @@ from .contest import \
     AddContestHandler, \
     ContestHandler, \
     OverviewHandler, \
+    PreflightHandler, \
     ResourcesListHandler, \
     ContestListHandler, \
     RemoveContestHandler
@@ -67,6 +68,7 @@ from .dataset import \
     DeleteManagerHandler, \
     AddTestcaseHandler, \
     AddTestcasesHandler, \
+    EditTestcaseHandler, \
     DeleteTestcaseHandler, \
     DownloadTestcasesHandler
 from .main import \
@@ -121,6 +123,7 @@ HANDLERS = [
     (r"/contests/add", AddContestHandler),
     (r"/contest/([0-9]+)", ContestHandler),
     (r"/contest/([0-9]+)/overview", OverviewHandler),
+    (r"/contest/([0-9]+)/preflight", PreflightHandler),
     (r"/contest/([0-9]+)/resourceslist", ResourcesListHandler),
 
     # Contest's users
@@ -184,6 +187,7 @@ HANDLERS = [
     (r"/dataset/([0-9]+)/manager/([0-9]+)/delete", DeleteManagerHandler),
     (r"/dataset/([0-9]+)/testcases/add", AddTestcaseHandler),
     (r"/dataset/([0-9]+)/testcases/add_multiple", AddTestcasesHandler),
+    (r"/dataset/([0-9]+)/testcase/([0-9]+)/edit", EditTestcaseHandler),
     (r"/dataset/([0-9]+)/testcase/([0-9]+)/delete", DeleteTestcaseHandler),
     (r"/dataset/([0-9]+)/testcases/download", DownloadTestcasesHandler),
 

@@ -579,6 +579,101 @@ class AddTestcasesHandler(BaseHandler):
         self.redirect(self.url("task", task.id))
 
 
+class EditTestcaseHandler(BaseHandler):
+    """Edit a text testcase or duplicate an existing testcase."""
+
+    def _items(self, dataset_id, testcase_id):
+        dataset = self.safe_get_item(Dataset, dataset_id)
+        testcase = self.safe_get_item(Testcase, testcase_id)
+        if testcase.dataset_id != dataset.id:
+            raise tornado_web.HTTPError(404)
+        return dataset, testcase
+
+    @require_permission(BaseHandler.PERMISSION_ALL)
+    def get(self, dataset_id, testcase_id):
+        dataset, testcase = self._items(dataset_id, testcase_id)
+        self.contest = dataset.task.contest
+        with self.service.file_cacher.get_file(testcase.input) as source:
+            input_content = source.read()
+        with self.service.file_cacher.get_file(testcase.output) as source:
+            output_content = source.read()
+        try:
+            input_text = input_content.decode("utf-8")
+            output_text = output_content.decode("utf-8")
+            text_editable = True
+        except UnicodeDecodeError:
+            input_text = output_text = ""
+            text_editable = False
+        params = self.render_params()
+        params.update(task=dataset.task, dataset=dataset, testcase=testcase,
+                      input_text=input_text, output_text=output_text,
+                      text_editable=text_editable)
+        self.render("edit_testcase.html", **params)
+
+    @require_permission(BaseHandler.PERMISSION_ALL)
+    def post(self, dataset_id, testcase_id):
+        dataset, testcase = self._items(dataset_id, testcase_id)
+        task_id = dataset.task_id
+        fallback = self.url("dataset", dataset_id, "testcase", testcase_id,
+                            "edit")
+        operation = self.get_body_argument("operation", "")
+        if operation not in ("save", "duplicate"):
+            raise tornado_web.HTTPError(400)
+        if operation == "duplicate":
+            codename = self.get_body_argument("codename", "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", codename) or \
+                    codename in dataset.testcases:
+                self.service.add_notification(
+                    make_datetime(), "Invalid codename",
+                    "Use a new name containing letters, digits, _ or -.")
+                self.redirect(fallback)
+                return
+
+        input_text = self.get_body_argument("input_text", default=None,
+                                            strip=False)
+        output_text = self.get_body_argument("output_text", default=None,
+                                             strip=False)
+        # A binary testcase can still be duplicated without changing its files.
+        if input_text is None or output_text is None:
+            if operation != "duplicate":
+                raise tornado_web.HTTPError(400)
+            input_digest, output_digest = testcase.input, testcase.output
+        else:
+            input_content = input_text.replace("\r\n", "\n").replace(
+                "\r", "\n").encode("utf-8")
+            output_content = output_text.replace("\r\n", "\n").replace(
+                "\r", "\n").encode("utf-8")
+            task_name = dataset.task.name
+            self.sql_session.close()
+            try:
+                input_digest = self.service.file_cacher.put_file_content(
+                    input_content, "Testcase input for task %s" % task_name)
+                output_digest = self.service.file_cacher.put_file_content(
+                    output_content, "Testcase output for task %s" % task_name)
+            except Exception as error:
+                self.service.add_notification(
+                    make_datetime(), "Testcase storage failed", repr(error))
+                self.redirect(fallback)
+                return
+            self.sql_session = Session()
+            dataset, testcase = self._items(dataset_id, testcase_id)
+
+        public = self.get_body_argument("public", None) is not None
+        if operation == "save":
+            testcase.input = input_digest
+            testcase.output = output_digest
+            testcase.public = public
+        else:
+            self.sql_session.add(Testcase(
+                codename, public, input_digest, output_digest,
+                dataset=dataset))
+        if self.try_commit():
+            self.service.proxy_service.reinitialize()
+            self.redirect(self.url("task", task_id))
+        else:
+            self.redirect(fallback)
+
+
 class DeleteTestcaseHandler(BaseHandler):
     """Delete a testcase.
 

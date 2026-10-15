@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block core %}
+<div class="core_title">
+  <h1><a href="{{ url('task', task.id) }}">{{ task.title }} ({{ task.name }})</a> / {{ testcase.codename }}</h1>
+</div>
+<h2>Edit or duplicate testcase</h2>
+<p>Changes to an existing testcase affect future judging. Rejudge earlier submissions if their results must be updated.</p>
+<form action="{{ url('dataset', dataset.id, 'testcase', testcase.id, 'edit') }}" method="POST">
+  {{ xsrf_form_html|safe }}
+  {% if text_editable %}
+  <p>Spaces and blank lines are preserved. A final newline is part of the testcase.</p>
+  <table>
+    <tr><td>Input</td><td><textarea name="input_text" rows="12" cols="75" wrap="off" spellcheck="false">
+{{ input_text|forceescape }}</textarea></td></tr>
+    <tr><td>Output</td><td><textarea name="output_text" rows="12" cols="75" wrap="off" spellcheck="false">
+{{ output_text|forceescape }}</textarea></td></tr>
+    <tr><td>Public</td><td><input type="checkbox" name="public" {% if testcase.public %}checked{% endif %}></td></tr>
+  </table>
+  <button type="submit" name="operation" value="save" formnovalidate>Save changes</button>
+  {% else %}
+  <p>This testcase is not UTF-8 text, so it cannot be edited here. You can duplicate its original files.</p>
+  {% if testcase.public %}<input type="hidden" name="public" value="on">{% endif %}
+  {% endif %}
+  <h3>Duplicate as a new testcase</h3>
+  <p><label>New codename <input type="text" name="codename" pattern="[A-Za-z0-9_-]+" placeholder="{{ testcase.codename }}_copy"></label></p>
+  <button type="submit" name="operation" value="duplicate">Duplicate{% if text_editable %} with the text above{% endif %}</button>
+</form>
+{% endblock core %}
