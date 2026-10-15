@@ -2,10 +2,39 @@
 
 {% block core %}
 <div class="core_title">
-  <h1><a href="{{ url("task", task.id) }}">{{ task.title }} ({{ task.name }})</a> - Upload testcase</h1>
+  <h1><a href="{{ url("task", task.id) }}">{{ task.title }} ({{ task.name }})</a> - Add testcase</h1>
 </div>
+<h2>Enter input and output</h2>
+<p>Type the testcase directly. Spaces and blank lines are kept; add a final newline if the expected input or output needs one.</p>
+<form action="{{ url("dataset", dataset.id, "testcases", "add") }}" method="POST">
+  {{ xsrf_form_html|safe }}
+  <input type="hidden" name="source" value="text">
+  <table>
+    <tr>
+      <td>Codename:</td>
+      <td><input type="text" name="codename" required></td>
+    </tr>
+    <tr>
+      <td>Input:</td>
+      <td><textarea name="input_text" rows="10" cols="70" wrap="off" spellcheck="false"></textarea></td>
+    </tr>
+    <tr>
+      <td>Output:</td>
+      <td><textarea name="output_text" rows="10" cols="70" wrap="off" spellcheck="false"></textarea></td>
+    </tr>
+    <tr>
+      <td>Public</td>
+      <td><input type="checkbox" name="public"></td>
+    </tr>
+  </table>
+  <input type="submit" value="Save testcase">
+  <input type="reset">
+</form>
+<div class="hr"></div>
+<h2>Upload input and output files</h2>
 <form enctype="multipart/form-data" action="{{ url("dataset", dataset.id, "testcases", "add") }}" method="POST">
   {{ xsrf_form_html|safe }}
+  <input type="hidden" name="source" value="upload">
   <table>
     <tr>
       <td>Codename:</td>

@@ -420,6 +420,33 @@ class AddTestcaseHandler(BaseHandler):
     """Add a testcase to a dataset.
 
     """
+    def _get_testcase_contents(self, source):
+        """Return input and output bytes from an upload or the text form.
+
+        Preserve whitespace in typed testcases. HTML forms transmit textarea
+        newlines as CRLF, so normalize them to the LF used by task files.
+        """
+        if source == "text":
+            input_text = self.get_body_argument(
+                "input_text", default=None, strip=False)
+            output_text = self.get_body_argument(
+                "output_text", default=None, strip=False)
+            if input_text is None or output_text is None:
+                raise ValueError("Please fill both input and output fields.")
+            return (input_text.replace("\r\n", "\n").replace("\r", "\n")
+                    .encode("utf-8"),
+                    output_text.replace("\r\n", "\n").replace("\r", "\n")
+                    .encode("utf-8"))
+
+        if source == "upload":
+            try:
+                return (self.request.files["input"][0]["body"],
+                        self.request.files["output"][0]["body"])
+            except (KeyError, IndexError):
+                raise ValueError("Please choose both input and output files.")
+
+        raise ValueError("Unknown testcase source.")
+
     @require_permission(BaseHandler.PERMISSION_ALL)
     def get(self, dataset_id):
         dataset = self.safe_get_item(Dataset, dataset_id)
@@ -441,13 +468,13 @@ class AddTestcaseHandler(BaseHandler):
         codename = self.get_argument("codename")
 
         try:
-            input_ = self.request.files["input"][0]
-            output = self.request.files["output"][0]
-        except KeyError:
+            input_content, output_content = self._get_testcase_contents(
+                self.get_body_argument("source", default="upload"))
+        except ValueError as error:
             self.service.add_notification(
                 make_datetime(),
                 "Invalid data",
-                "Please fill both input and output.")
+                str(error))
             self.redirect(fallback_page)
             return
 
@@ -458,11 +485,11 @@ class AddTestcaseHandler(BaseHandler):
         try:
             input_digest = \
                 self.service.file_cacher.put_file_content(
-                    input_["body"],
+                    input_content,
                     "Testcase input for task %s" % task_name)
             output_digest = \
                 self.service.file_cacher.put_file_content(
-                    output["body"],
+                    output_content,
                     "Testcase output for task %s" % task_name)
         except Exception as error:
             self.service.add_notification(
